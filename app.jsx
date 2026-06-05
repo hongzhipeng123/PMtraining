@@ -1,31 +1,45 @@
-/* ── Main App: Sidebar + Routing ── */
+/* ── Main App v2.0: Sidebar + Routing + Cmd+K + Memory Settings ── */
 
 const NAV_ITEMS = [
-  { key:'home', label:'首页', icon:'home', group:'main' },
-  { key:'knowledge', label:'知识图谱', icon:'knowledge', group:'main' },
-  { type:'divider', label:'AI 工具箱', group:'tools' },
-  { key:'market', label:'市场调研', icon:'search', group:'tools' },
-  { key:'competitor', label:'竞品分析', icon:'chart', group:'tools' },
-  { key:'prd', label:'PRD 生成', icon:'book', group:'tools' },
-  { type:'divider', label:'学习中心', group:'learn' },
-  { key:'dictionary', label:'名词百科', icon:'book', group:'learn' },
-  { key:'interview', label:'模拟面试', icon:'interview', group:'learn' },
-  { key:'daily', label:'每日一问', icon:'daily', group:'learn' },
-  { type:'divider', label:'个人', group:'personal' },
-  { key:'dashboard', label:'成长仪表盘', icon:'dashboard', group:'personal' },
+  { key:'home', label:'首页', icon:'home' },
+  { key:'knowledge', label:'知识图谱', icon:'knowledge' },
+  { type:'divider', label:'AI 工具箱' },
+  { key:'market', label:'市场调研', icon:'search' },
+  { key:'competitor', label:'竞品分析', icon:'chart' },
+  { key:'prd', label:'PRD 生成', icon:'book' },
+  { type:'divider', label:'学习中心' },
+  { key:'dictionary', label:'名词百科', icon:'book' },
+  { key:'interview', label:'模拟面试', icon:'interview' },
+  { key:'daily', label:'每日一问', icon:'daily' },
+  { type:'divider', label:'个人' },
+  { key:'dashboard', label:'成长仪表盘', icon:'dashboard' },
+  { key:'report', label:'成长报告', icon:'chart' },
 ];
 
-const Sidebar = ({ active, onNavigate, collapsed, onToggle, user, onLogout, onOpenSettings }) => (
+const Sidebar = ({ active, onNavigate, collapsed, onToggle, user, onLogout, onOpenSettings, onOpenCmdK }) => (
   <div style={{
     width: collapsed ? 64 : 220, height: '100%', background: T.bgAlt,
     borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column',
-    transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', flexShrink: 0, overflow: 'hidden',
+    transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', flexShrink: 0, overflow: 'hidden', position: 'relative',
   }}>
     <div style={{ padding: collapsed ? '20px 12px' : '20px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
       <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: `linear-gradient(135deg, ${T.p600}, ${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', boxShadow: T.glowSm }}>PM</div>
-      {!collapsed && <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}><div style={{ fontSize: 14, fontWeight: 800, color: T.text }}>AI PM 修炼场</div><div style={{ fontSize: 10, color: T.muted }}>v1.0</div></div>}
+      {!collapsed && <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}><div style={{ fontSize: 14, fontWeight: 800, color: T.text }}>AI PM 修炼场</div><div style={{ fontSize: 10, color: T.muted }}>v2.0</div></div>}
     </div>
-    <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+    {!collapsed && (
+      <div style={{ padding: '10px 12px 4px' }}>
+        <div onClick={onOpenCmdK} style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', borderRadius: 8, background: T.surface,
+          border: `1px solid ${T.border}`, cursor: 'pointer', transition: T.transition,
+        }}>
+          <Icon name="search" size={14} color={T.muted} />
+          <span style={{ flex: 1, fontSize: 12, color: T.muted }}>快速搜索...</span>
+          <span style={{ fontSize: 9, padding: '2px 5px', borderRadius: 3, background: T.bg, color: T.muted, fontFamily: 'monospace', border: `1px solid ${T.border}` }}>⌘K</span>
+        </div>
+      </div>
+    )}
+    <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
       {NAV_ITEMS.map((item, i) => {
         if (item.type === 'divider') {
           if (collapsed) return <div key={i} style={{ height: 1, background: T.border, margin: '8px 12px' }} />;
@@ -67,17 +81,19 @@ const NavItem = ({ item, active, collapsed, onClick }) => {
   );
 };
 
-/* ── Settings Modal ── */
+/* ── Settings Modal (v2: + Memory + Data) ── */
 const SettingsModal = ({ open, onClose, user }) => {
+  const [tab, setTab] = React.useState('api');
   const [apiKey, setApiKey] = React.useState(() => localStorage.getItem(`user_${user}_apikey`) || '');
   const [saved, setSaved] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
   const [testResult, setTestResult] = React.useState('');
+  const [strategy, setStrategyS] = React.useState(() => MemoryManager.getStrategy(user));
   const toast = useToast();
 
   const handleSave = () => {
     localStorage.setItem(`user_${user}_apikey`, apiKey.trim());
-    setSaved(true); toast('API Key 已保存', 'success');
+    setSaved(true); toast('设置已保存', 'success');
     setTimeout(() => { setSaved(false); onClose(); }, 600);
   };
 
@@ -85,33 +101,141 @@ const SettingsModal = ({ open, onClose, user }) => {
     if (!apiKey.trim()) { toast('请先填写 API Key', 'warning'); return; }
     setTesting(true); setTestResult('');
     try {
-      const result = await callDeepSeekSync(apiKey.trim(), [
-        { role: 'user', content: '回复"连接成功"两个字即可' },
-      ]);
+      const result = await callDeepSeekSync(apiKey.trim(), [{ role: 'user', content: '回复"连接成功"' }]);
       setTestResult('✅ ' + result.slice(0, 50));
       toast('API Key 验证成功', 'success');
     } catch (err) {
       setTestResult('❌ ' + err.message);
-      toast('API Key 验证失败', 'error');
+      toast('验证失败', 'error');
     }
     setTesting(false);
   };
 
+  const handleExport = () => {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith(`user_${user}_`) || key === 'pm_users') {
+        data[key] = localStorage.getItem(key);
+      }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `PM修炼场_备份_${user}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    toast('数据已导出', 'success');
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        let count = 0;
+        Object.entries(data).forEach(([k, v]) => {
+          if (typeof v === 'string') { localStorage.setItem(k, v); count++; }
+        });
+        toast(`已导入 ${count} 项数据，刷新生效`, 'success');
+        setTimeout(() => location.reload(), 800);
+      } catch (err) { toast('导入失败: 文件格式错误', 'error'); }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleClearMemory = () => {
+    if (!confirm('确认清除所有会话记忆和用户画像？此操作不可恢复。')) return;
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith(`user_${user}_session_`) || k.startsWith(`user_${user}_sessions_index`) ||
+          k === `user_${user}_profile` || k === `user_${user}_token_log`) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    toast(`已清除 ${keys.length} 项记忆数据`, 'success');
+  };
+
+  if (!open) return null;
+
   return (
-    <Modal open={open} onClose={onClose} title="设置">
-      <div style={{ marginBottom: 20 }}>
-        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: T.text }}>DeepSeek API Key</h4>
-        <Input label="" value={apiKey} onChange={setApiKey} placeholder="sk-..." icon="key" style={{ marginBottom: 8 }} />
-        <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.6, marginBottom: 12 }}>
-          在 <a href="https://platform.deepseek.com/" target="_blank" style={{ color: T.p400 }}>DeepSeek 开放平台</a> 获取 API Key。Key 仅存储在本地浏览器中，不会上传到任何服务器。
-        </p>
-        {testResult && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, background: T.surface, marginBottom: 12, color: testResult.startsWith('✅') ? T.success : T.error }}>{testResult}</div>}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-        <Button variant="ghost" onClick={handleTest} disabled={testing}>{testing ? '测试中...' : '测试连接'}</Button>
-        <Button variant="secondary" onClick={onClose}>取消</Button>
-        <Button onClick={handleSave} icon={saved ? 'check' : 'key'}>{saved ? '已保存' : '保存'}</Button>
-      </div>
+    <Modal open={open} onClose={onClose} title="设置" width={520}>
+      <TabBar tabs={[
+        { key: 'api', label: 'API Key' },
+        { key: 'memory', label: '记忆策略' },
+        { key: 'data', label: '数据管理' },
+      ]} active={tab} onChange={setTab} style={{ marginBottom: 20 }} />
+
+      {tab === 'api' && (
+        <>
+          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>DeepSeek API Key</h4>
+          <Input value={apiKey} onChange={setApiKey} placeholder="sk-..." icon="key" style={{ marginBottom: 8 }} />
+          <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.6, marginBottom: 12 }}>
+            在 <a href="https://platform.deepseek.com/" target="_blank" style={{ color: T.p400 }}>DeepSeek 开放平台</a> 获取。Key 仅存储在本地浏览器。
+          </p>
+          {testResult && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, background: T.surface, marginBottom: 12, color: testResult.startsWith('✅') ? T.success : T.error }}>{testResult}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Button variant="ghost" onClick={handleTest} disabled={testing}>{testing ? '测试中...' : '测试连接'}</Button>
+            <Button variant="secondary" onClick={onClose}>取消</Button>
+            <Button onClick={handleSave} icon={saved ? 'check' : 'key'}>{saved ? '已保存' : '保存'}</Button>
+          </div>
+        </>
+      )}
+
+      {tab === 'memory' && (
+        <>
+          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>分层记忆策略</h4>
+          <p style={{ fontSize: 11, color: T.muted, marginBottom: 14, lineHeight: 1.6 }}>
+            控制 AI 对话中包含多少历史上下文。策略越完整，AI 越懂你，但 Token 消耗越高。
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {Object.entries(MEMORY_STRATEGIES).map(([key, s]) => (
+              <button key={key} onClick={() => { setStrategyS(key); MemoryManager.setStrategy(user, key); toast('已切换策略', 'success'); }} style={{
+                padding: 14, borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                background: strategy === key ? T.p500 + '20' : T.surface,
+                border: `1px solid ${strategy === key ? T.p500 + '60' : T.border}`,
+                color: T.text,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: T.textSec }}>{s.desc} · 保留最近 {s.recent} 轮{s.useSummary ? ' + 自动摘要' : ''}</div>
+              </button>
+            ))}
+          </div>
+          <div style={{ background: T.success + '10', padding: 12, borderRadius: 8, fontSize: 11, color: T.success, border: `1px solid ${T.success}30` }}>
+            💡 提示：分层记忆系统让长对话不再爆 Token，平均可节省 60-90% 的成本。
+          </div>
+        </>
+      )}
+
+      {tab === 'data' && (
+        <>
+          <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>数据管理</h4>
+          <div style={{ marginBottom: 12 }}>
+            <Button variant="secondary" icon="download" onClick={handleExport} style={{ width: '100%', justifyContent: 'center' }}>
+              📥 导出所有数据（备份）
+            </Button>
+            <p style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>导出全部学习数据为 JSON 文件，可用于跨设备迁移。</p>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block' }}>
+              <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
+                padding: '9px 20px', background: T.surface, border: `1px solid ${T.border}`,
+                borderRadius: T.radiusSm, color: T.text, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+              }}>
+                <Icon name="copy" size={16} /> 📤 导入数据（恢复）
+              </span>
+            </label>
+            <p style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>导入备份的 JSON 文件，会覆盖当前数据。</p>
+          </div>
+          <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 16, paddingTop: 16 }}>
+            <Button variant="danger" onClick={handleClearMemory} style={{ width: '100%', justifyContent: 'center' }}>
+              🗑 清除所有会话记忆
+            </Button>
+            <p style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>会清除：用户画像、会话历史、Token 日志。其他数据保留。</p>
+          </div>
+        </>
+      )}
     </Modal>
   );
 };
@@ -122,6 +246,7 @@ const App = () => {
   const [page, setPage] = React.useState('home');
   const [collapsed, setCollapsed] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [cmdKOpen, setCmdKOpen] = React.useState(false);
   const [pageKey, setPageKey] = React.useState(0);
 
   const navigate = p => { setPage(p); setPageKey(k => k + 1); };
@@ -130,7 +255,6 @@ const App = () => {
     sessionStorage.setItem('currentUser', username);
     setUser(username);
     Tracker.track(username, '登录系统');
-    // Auto-unlock first achievement
     const achs = JSON.parse(localStorage.getItem(`user_${username}_achievements`) || '[]');
     if (!achs.includes('first_login')) {
       achs.push('first_login');
@@ -149,10 +273,21 @@ const App = () => {
     return () => { delete window.__openSettings; };
   }, []);
 
-  const stats = React.useMemo(() => {
-    if (!user) return {};
-    return Tracker.getStats(user);
-  }, [user, page, pageKey]);
+  // Cmd+K shortcut listener
+  React.useEffect(() => {
+    if (!user) return;
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdKOpen(o => !o);
+      }
+      if (e.key === 'Escape' && cmdKOpen) setCmdKOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [user, cmdKOpen]);
+
+  const stats = React.useMemo(() => user ? Tracker.getStats(user) : {}, [user, page, pageKey]);
 
   if (!user) return <LoginScreen onLogin={handleLogin} />;
 
@@ -163,18 +298,24 @@ const App = () => {
       case 'market': case 'competitor': case 'prd':
         return <ToolPage key={page} toolKey={page} user={user} />;
       case 'dictionary': return <DictionaryPage user={user} />;
-      case 'interview': return <InterviewPage user={user} />;
-      case 'daily': return <DailyPage user={user} />;
-      case 'dashboard': return <DashboardPage user={user} />;
+      case 'interview': return <InterviewPage user={user} onNavToReport={() => navigate('report')} />;
+      case 'daily': return <DailyPage user={user} onShowHistory={() => navigate('daily-history')} />;
+      case 'daily-history': return <DailyHistoryPage user={user} onBackToDaily={() => navigate('daily')} />;
+      case 'dashboard': return <DashboardPage user={user} onNavigate={navigate} />;
+      case 'report': return <ReportPage user={user} onNavigate={navigate} />;
       default: return <HomePage user={user} stats={stats} onNavigate={navigate} />;
     }
   };
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', background: T.bg, position: 'relative' }}>
-      <Sidebar active={page} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} user={user} onLogout={handleLogout} onOpenSettings={() => setSettingsOpen(true)} />
+      <Sidebar active={page} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+        user={user} onLogout={handleLogout}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenCmdK={() => setCmdKOpen(true)} />
       <main key={pageKey} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>{renderPage()}</main>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} user={user} />
+      <CmdKPalette open={cmdKOpen} onClose={() => setCmdKOpen(false)} onNavigate={navigate} user={user} />
     </div>
   );
 };

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>改进方向 UI 设计</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="improvements-mocks.jsx"></script>
+<script type="text/babel">
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <DesignCanvas>
+    <DCSection id="ai-memory" title="① AI 分层对话记忆（Token 节省 71%）" subtitle="画像 + 摘要 + 原文三层架构，让长对话不再爆 Token">
+      <DCArtboard id="memory" label="面试模块 · 分层记忆 + Token 消耗面板" width={1200} height={680}>
+        <MockAIMemory />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="growth-report" title="② 结构化成长报告" subtitle="周/月度自动汇总，一键导出 PDF">
+      <DCArtboard id="report" label="本周成长报告" width={1100} height={780}>
+        <MockGrowthReport />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="ai-reverse" title="③ AI 反向追问（替代输出对比）" subtitle="不直接给方案，先帮你想清楚 3 个关键问题">
+      <DCArtboard id="reverse" label="PRD 生成器 · 反向追问模式" width={1100} height={680}>
+        <MockAIReverse />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="kg-mastery" title="④ 知识图谱掌握进度" subtitle="个性化标记 + 学习进度可视化">
+      <DCArtboard id="mastery" label="知识图谱（带掌握状态）" width={1100} height={720}>
+        <MockKnowledgeMastery />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="interview-level" title="⑤ 面试题难度分级" subtitle="初/中/高三档，渐进式挑战">
+      <DCArtboard id="levels" label="题库（带难度标签）" width={1100} height={680}>
+        <MockInterviewLevels />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="daily-history" title="⑥ 每日一问历史日历" subtitle="日历视图回顾过去 30 天答题">
+      <DCArtboard id="calendar" label="答题日历 + 历史回顾" width={1100} height={720}>
+        <MockDailyHistory />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="cmdk" title="⑦ Cmd+K 全局搜索" subtitle="一键唤起，快速跳转任何内容">
+      <DCArtboard id="cmdk-art" label="Command Palette 弹层" width={1100} height={620}>
+        <MockCmdK />
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+</script>
+</body>
+</html>

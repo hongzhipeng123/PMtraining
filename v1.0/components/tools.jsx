@@ -8,24 +8,23 @@ const TOOL_CONFIGS = {
 
 const ToolPage = ({ toolKey, user }) => {
   const config = TOOL_CONFIGS[toolKey];
-  const [phase, setPhase] = React.useState('input'); // input | reverseQ | output
   const [input, setInput] = React.useState('');
   const [output, setOutput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [isDone, setIsDone] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [error, setError] = React.useState('');
-  const [useReverse, setUseReverse] = React.useState(true);
   const toast = useToast();
 
-  const startGenerate = (enrichedInput) => {
+  const handleGenerate = () => {
+    if (!input.trim()) { toast('请填写需求描述', 'warning'); return; }
     const apiKey = localStorage.getItem(`user_${user}_apikey`);
     if (!apiKey || !apiKey.trim()) { setError('NO_KEY'); return; }
-    setPhase('output');
+
     setLoading(true); setOutput(''); setIsDone(false); setError('');
     Tracker.track(user, `使用${config.title}：${input.slice(0, 30)}...`);
 
-    const messages = SKILL_PROMPTS[toolKey].buildMessages(enrichedInput || input);
+    const messages = SKILL_PROMPTS[toolKey].buildMessages(input);
     callDeepSeek(apiKey, messages,
       chunk => setOutput(chunk),
       full => {
@@ -34,32 +33,9 @@ const ToolPage = ({ toolKey, user }) => {
       },
       err => {
         setError(err); setLoading(false);
-        if (output) setIsDone(true);
+        if (output) setIsDone(true); // partial output still usable
       }
     );
-  };
-
-  const handleStart = () => {
-    if (!input.trim()) { toast('请填写需求描述', 'warning'); return; }
-    const apiKey = localStorage.getItem(`user_${user}_apikey`);
-    if (!apiKey || !apiKey.trim()) { setError('NO_KEY'); return; }
-    if (useReverse) {
-      setPhase('reverseQ');
-    } else {
-      startGenerate(input);
-    }
-  };
-
-  const handleReverseComplete = (origInput, answers) => {
-    // Build enriched input from clarifications
-    const config = REVERSE_QUESTIONS[toolKey];
-    const enriched = `${origInput}\n\n【已通过反向追问澄清以下要点】\n` +
-      config.questions.map(q => `- ${q.label}：${answers[q.key] || '(未明确)'}`).join('\n');
-    startGenerate(enriched);
-  };
-
-  const handleReset = () => {
-    setPhase('input'); setOutput(''); setIsDone(false); setError(''); setLoading(false);
   };
 
   const handleCopy = () => {
@@ -72,23 +48,6 @@ const ToolPage = ({ toolKey, user }) => {
     a.click(); toast('文件已下载', 'success');
   };
 
-  /* Reverse questioning phase */
-  if (phase === 'reverseQ') {
-    return (
-      <div className="page-enter" style={{ padding: '24px 32px', height: '100%', overflow: 'auto' }}>
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800 }}>{config.title}</h2>
-        </div>
-        <ReverseQuestionFlow
-          toolKey={toolKey} initialInput={input}
-          user={user}
-          onComplete={handleReverseComplete}
-          onSkip={() => startGenerate(input)}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '28px 32px' }}>
       <div style={{ marginBottom: 20 }}>
@@ -100,32 +59,17 @@ const ToolPage = ({ toolKey, user }) => {
         </div>
         <p style={{ fontSize: 13, color: T.textSec }}>{config.desc}</p>
       </div>
-      {phase === 'input' && (
-        <div style={{ marginBottom: 16 }}>
-          <textarea value={input} onChange={e => setInput(e.target.value)} placeholder={config.placeholder}
-            style={{ width: '100%', minHeight: 100, padding: 14, background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 14, resize: 'vertical', outline: 'none', transition: T.transition, lineHeight: 1.7 }}
-            onFocus={e => e.target.style.borderColor = T.p500} onBlur={e => e.target.style.borderColor = T.border} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 12, color: T.muted }}>{input.length} 字</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.textSec, cursor: 'pointer', userSelect: 'none' }}>
-                <input type="checkbox" checked={useReverse} onChange={e => setUseReverse(e.target.checked)} style={{ accentColor: T.p500 }} />
-                🎯 反向追问模式（推荐 · 训练 PM 思维）
-              </label>
-            </div>
-            <Button onClick={handleStart} disabled={loading} icon={loading ? undefined : 'send'} style={{ minWidth: 120 }}>
-              {config.btnText}
-            </Button>
-          </div>
+      <div style={{ marginBottom: 16 }}>
+        <textarea value={input} onChange={e => setInput(e.target.value)} placeholder={config.placeholder}
+          style={{ width: '100%', minHeight: 100, padding: 14, background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 14, resize: 'vertical', outline: 'none', transition: T.transition, lineHeight: 1.7 }}
+          onFocus={e => e.target.style.borderColor = T.p500} onBlur={e => e.target.style.borderColor = T.border} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <span style={{ fontSize: 12, color: T.muted }}>{input.length} 字</span>
+          <Button onClick={handleGenerate} disabled={loading} icon={loading ? undefined : 'send'} style={{ minWidth: 120 }}>
+            {loading ? <><Spinner size={14} color="#fff" /> 生成中...</> : config.btnText}
+          </Button>
         </div>
-      )}
-      {phase === 'output' && (
-        <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: T.surface, borderRadius: 8 }}>
-          <span style={{ fontSize: 12, color: T.textSec }}>📝 需求：<span style={{ color: T.text }}>{input.slice(0, 60)}{input.length > 60 ? '...' : ''}</span></span>
-          <Button variant="ghost" size="sm" onClick={handleReset}>修改需求</Button>
-        </div>
-      )}
-      {phase === 'output' && (
+      </div>
       <div style={{ flex: 1, background: T.surface, borderRadius: T.radius, border: `1px solid ${T.border}`, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {error === 'NO_KEY' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
@@ -145,11 +89,11 @@ const ToolPage = ({ toolKey, user }) => {
               <div style={{ fontWeight: 700, fontSize: 15, color: T.error, marginBottom: 4 }}>生成失败</div>
               <div style={{ fontSize: 13, color: T.textSec }}>{error}</div>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => startGenerate(input)}>重试</Button>
+            <Button variant="secondary" size="sm" onClick={handleGenerate}>重试</Button>
           </div>
         ) : !output ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted, fontSize: 14, gap: 8 }}>
-            <Spinner size={16} /> 流式生成中，请稍候...
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted, fontSize: 14 }}>
+            输入需求后点击生成，AI 将实时流式输出内容
           </div>
         ) : (
           <>
@@ -158,7 +102,7 @@ const ToolPage = ({ toolKey, user }) => {
               {error && <div style={{ marginTop: 12, padding: '8px 12px', background: T.error + '15', border: `1px solid ${T.error}30`, borderRadius: 8, fontSize: 12, color: T.error }}>⚠️ {error}</div>}
             </div>
             {isDone && (
-              <div style={{ padding: '12px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10 }}>
+              <div style={{ padding: '12px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10, animation: 'fadeIn 0.3s ease-out both' }}>
                 <Button variant="secondary" size="sm" icon={copied ? 'check' : 'copy'} onClick={handleCopy}>{copied ? '已复制' : '复制 Markdown'}</Button>
                 <Button variant="secondary" size="sm" icon="download" onClick={handleDownload}>下载 .md 文件</Button>
               </div>
@@ -166,7 +110,6 @@ const ToolPage = ({ toolKey, user }) => {
           </>
         )}
       </div>
-      )}
     </div>
   );
 };

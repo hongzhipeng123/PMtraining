@@ -1,43 +1,5 @@
 /* ── Knowledge Graph Page (refactored to use data-knowledge + real API) ── */
 
-/* ── Mastery State Manager ── */
-const MASTERY_STATES = { mastered: { label: '已掌握', icon: '✓', color: '#10b981' },
-  learning: { label: '学习中', icon: '◐', color: '#f59e0b' },
-  todo:     { label: '待学习', icon: '○', color: '#64748b' } };
-const Mastery = {
-  getAll(user) {
-    try { return JSON.parse(localStorage.getItem(`user_${user}_kg_mastery`) || '{}'); }
-    catch { return {}; }
-  },
-  get(user, nodeName) { return Mastery.getAll(user)[nodeName] || 'todo'; },
-  set(user, nodeName, state) {
-    const all = Mastery.getAll(user);
-    if (state === 'todo') delete all[nodeName];
-    else all[nodeName] = state;
-    localStorage.setItem(`user_${user}_kg_mastery`, JSON.stringify(all));
-  },
-  counts(user) {
-    const all = Mastery.getAll(user);
-    let mastered = 0, learning = 0;
-    Object.values(all).forEach(s => { if (s === 'mastered') mastered++; else if (s === 'learning') learning++; });
-    return { mastered, learning, todo: 48 - mastered - learning };
-  },
-  countsByDomain(user) {
-    const all = Mastery.getAll(user);
-    const result = {};
-    (window.KNOWLEDGE_TREE || []).forEach(d => {
-      let m = 0, l = 0;
-      d.children.forEach(c => {
-        const s = all[c.name];
-        if (s === 'mastered') m++;
-        else if (s === 'learning') l++;
-      });
-      result[d.id] = { mastered: m, learning: l, total: d.children.length };
-    });
-    return result;
-  },
-};
-
 /* ── Home Page ── */
 const HomePage = ({ user, stats, onNavigate }) => {
   const quickLinks = [
@@ -98,7 +60,7 @@ const HomePage = ({ user, stats, onNavigate }) => {
 };
 
 /* ── Mind Map (unchanged logic, uses KNOWLEDGE_TREE from data-knowledge.jsx) ── */
-const MindMap = ({ onSelectNode, user, masteryVersion }) => {
+const MindMap = ({ onSelectNode }) => {
   const [expanded, setExpanded] = React.useState({});
   const [offset, setOffset] = React.useState({ x: 0, y: 0 });
   const [dragging, setDragging] = React.useState(false);
@@ -156,10 +118,7 @@ const MindMap = ({ onSelectNode, user, masteryVersion }) => {
               <MindNode x={pos.x - 52} y={pos.y - 22} color={node.color} label={node.label} expanded={isExp} onClick={() => toggleExpand(node.id)} />
               {isExp && node.children.map((child, ci) => {
                 const sub = getSubPos(i, ci, node.children.length);
-                const mastery = user ? Mastery.get(user, child.name) : 'todo';
-                return <MindLeaf key={ci} x={sub.x - 42} y={sub.y - 16} color={node.color} label={child.name} delay={ci * 0.04}
-                  mastery={mastery}
-                  onClick={() => onSelectNode && onSelectNode(child.name, node.label)} />;
+                return <MindLeaf key={ci} x={sub.x - 42} y={sub.y - 16} color={node.color} label={child.name} delay={ci * 0.04} onClick={() => onSelectNode && onSelectNode(child.name, node.label)} />;
               })}
             </React.Fragment>
           );
@@ -170,27 +129,7 @@ const MindMap = ({ onSelectNode, user, masteryVersion }) => {
 };
 const zoomBtnStyle = { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, color: T.text, width: 36, height: 36, cursor: 'pointer', fontSize: 16, fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const MindNode = ({ x, y, color, label, expanded, onClick }) => { const [hov, setHov] = React.useState(false); return (<div className="mind-node" onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ position: 'absolute', left: x, top: y, width: 104, height: 44, background: hov ? color + '30' : color + '18', border: `1.5px solid ${color}${hov ? '90' : '50'}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer', transition: T.transition, zIndex: 10, boxShadow: hov ? `0 0 20px ${color}40` : 'none', transform: hov ? 'scale(1.08)' : 'scale(1)' }}><span style={{ fontSize: 13, fontWeight: 700, color }}>{label}</span><span style={{ fontSize: 10, color, opacity: 0.7 }}>{expanded ? '−' : '+'}</span></div>); };
-const MindLeaf = ({ x, y, color, label, delay, mastery, onClick }) => {
-  const [hov, setHov] = React.useState(false);
-  const ms = MASTERY_STATES[mastery] || MASTERY_STATES.todo;
-  const dim = mastery === 'todo';
-  return (
-    <div className="mind-node" onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        position: 'absolute', left: x, top: y, minWidth: 84, height: 32, padding: '0 10px',
-        background: hov ? color + '20' : T.surface,
-        border: `1px solid ${mastery === 'mastered' ? ms.color + '60' : color + (hov ? '60' : '30')}`,
-        borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-        cursor: 'pointer', transition: T.transition, zIndex: 8, whiteSpace: 'nowrap',
-        animation: `nodeExpand 0.3s ease-out ${delay}s both`,
-        boxShadow: hov ? `0 0 12px ${color}30` : 'none',
-        opacity: dim ? 0.75 : 1,
-      }}>
-      <span style={{ fontSize: 11, color: ms.color, fontWeight: 700, lineHeight: 1 }}>{ms.icon}</span>
-      <span style={{ fontSize: 11, fontWeight: 600, color: hov ? color : T.textSec }}>{label}</span>
-    </div>
-  );
-};
+const MindLeaf = ({ x, y, color, label, delay, onClick }) => { const [hov, setHov] = React.useState(false); return (<div className="mind-node" onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)} style={{ position: 'absolute', left: x, top: y, minWidth: 84, height: 32, padding: '0 12px', background: hov ? color + '20' : T.surface, border: `1px solid ${color}${hov ? '60' : '30'}`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: T.transition, zIndex: 8, whiteSpace: 'nowrap', animation: `nodeExpand 0.3s ease-out ${delay}s both`, boxShadow: hov ? `0 0 12px ${color}30` : 'none' }}><span style={{ fontSize: 11, fontWeight: 600, color: hov ? color : T.textSec }}>{label}</span></div>); };
 
 /* ── Knowledge Page ── */
 const KnowledgePage = ({ user }) => {
@@ -198,17 +137,6 @@ const KnowledgePage = ({ user }) => {
   const [aiExplain, setAiExplain] = React.useState('');
   const [aiLoading, setAiLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('graph');
-  const [masteryVer, setMasteryVer] = React.useState(0);
-  const toast = useToast();
-
-  const counts = React.useMemo(() => Mastery.counts(user), [user, masteryVer]);
-  const byDomain = React.useMemo(() => Mastery.countsByDomain(user), [user, masteryVer]);
-
-  const setMastery = (name, state) => {
-    Mastery.set(user, name, state);
-    setMasteryVer(v => v + 1);
-    toast(`已标记为「${MASTERY_STATES[state].label}」`, 'success');
-  };
 
   // Find detail from static data first, then call API if connected
   const findStaticDetail = (name) => {
@@ -229,10 +157,6 @@ const KnowledgePage = ({ user }) => {
     Tracker.track(user, `查看知识点：${name}`);
     Tracker.updateStats(user, 'knowledge');
     Tracker.trackKnowledgeBrowse(user, name);
-    // Auto-mark as learning if untouched
-    if (Mastery.get(user, name) === 'todo') {
-      setTimeout(() => { Mastery.set(user, name, 'learning'); setMasteryVer(v => v + 1); }, 800);
-    }
 
     // Try static data first
     const staticDetail = findStaticDetail(name);
@@ -266,17 +190,10 @@ const KnowledgePage = ({ user }) => {
     <div className="page-enter" style={{ display: 'flex', height: '100%' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px 28px 0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
-            <TabBar tabs={[{ key: 'graph', label: '知识图谱' }, { key: 'topics', label: 'AI 专题' }, { key: 'cases', label: '经典案例' }, { key: 'mastery', label: '掌握进度' }]} active={activeTab} onChange={setActiveTab} style={{ width: 400 }} />
-            <div style={{ display: 'flex', gap: 14, fontSize: 11, color: T.textSec }}>
-              <span><span style={{ color: T.success, fontWeight: 700 }}>✓ {counts.mastered}</span> 已掌握</span>
-              <span><span style={{ color: T.warning, fontWeight: 700 }}>◐ {counts.learning}</span> 学习中</span>
-              <span><span style={{ color: T.muted, fontWeight: 700 }}>○ {counts.todo}</span> 待学习</span>
-            </div>
-          </div>
+          <TabBar tabs={[{ key: 'graph', label: '知识图谱' }, { key: 'topics', label: 'AI 专题' }, { key: 'cases', label: '经典案例' }]} active={activeTab} onChange={setActiveTab} style={{ width: 320 }} />
         </div>
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {activeTab === 'graph' && <MindMap onSelectNode={handleSelectNode} user={user} masteryVersion={masteryVer} />}
+          {activeTab === 'graph' && <MindMap onSelectNode={handleSelectNode} />}
           {activeTab === 'topics' && (
             <div style={{ padding: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, overflowY: 'auto', height: '100%' }}>
               {AI_TOPICS.map((t, i) => (
@@ -287,57 +204,15 @@ const KnowledgePage = ({ user }) => {
               ))}
             </div>
           )}
-          {activeTab === 'mastery' && (
-            <div style={{ padding: 28, overflowY: 'auto', height: '100%' }}>
-              <Card style={{ marginBottom: 18, background: `linear-gradient(135deg, ${T.p600}15, ${T.cyan}10)`, border: `1px solid ${T.p500}30` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>整体进度</div>
-                    <div style={{ fontSize: 11, color: T.textSec }}>距离「全知全能」勋章还差 <strong style={{ color: T.warning }}>{48 - counts.mastered}</strong> 个</div>
-                  </div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: T.p400 }}>{Math.round(counts.mastered / 48 * 100)}%</div>
-                </div>
-                <div style={{ height: 8, background: T.bg, borderRadius: 4, overflow: 'hidden', display: 'flex', marginTop: 12 }}>
-                  <div style={{ width: `${counts.mastered / 48 * 100}%`, background: T.success }} />
-                  <div style={{ width: `${counts.learning / 48 * 100}%`, background: T.warning }} />
-                </div>
-              </Card>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
-                {KNOWLEDGE_TREE.map(domain => {
-                  const c = byDomain[domain.id] || { mastered: 0, learning: 0, total: 6 };
-                  return (
-                    <Card key={domain.id} style={{ padding: 14, borderLeft: `3px solid ${domain.color}` }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 14 }}>{domain.icon}</span>
-                          <span style={{ fontWeight: 700, fontSize: 13, color: domain.color }}>{domain.label}</span>
-                        </div>
-                        <span style={{ fontSize: 11, color: T.muted }}>{c.mastered}/{c.total}</span>
-                      </div>
-                      <div style={{ height: 4, background: T.bg, borderRadius: 2, overflow: 'hidden', marginBottom: 12, display: 'flex' }}>
-                        <div style={{ width: `${c.mastered / c.total * 100}%`, background: T.success }} />
-                        <div style={{ width: `${c.learning / c.total * 100}%`, background: T.warning }} />
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {domain.children.map(node => {
-                          const ms = Mastery.get(user, node.name);
-                          const meta = MASTERY_STATES[ms];
-                          return (
-                            <span key={node.name} onClick={() => handleSelectNode(node.name, domain.label)} style={{
-                              fontSize: 10, padding: '3px 8px', borderRadius: 12, cursor: 'pointer',
-                              background: meta.color + '15', color: meta.color,
-                              border: `1px solid ${meta.color}30`,
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                            }}>
-                              <span>{meta.icon}</span>{node.name}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+          {activeTab === 'cases' && (
+            <div style={{ padding: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, overflowY: 'auto', height: '100%' }}>
+              {CASES.map((c, i) => (
+                <Card key={i} hoverable onClick={() => handleSelectNode(c.name + '产品分析', '案例库')} style={{ animation: `slideInUp 0.3s ease-out ${i * 0.05}s both` }}>
+                  <Badge color={T.p500} style={{ marginBottom: 10 }}>{c.tag}</Badge>
+                  <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{c.name}</div>
+                  <div style={{ fontSize: 13, color: T.textSec }}>{c.desc}</div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
@@ -350,24 +225,6 @@ const KnowledgePage = ({ user }) => {
               <div style={{ fontWeight: 700, fontSize: 16 }}>{selectedNode.name}</div>
             </div>
             <button onClick={() => setSelectedNode(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer' }}><Icon name="close" size={18} /></button>
-          </div>
-          {/* Mastery selector */}
-          <div style={{ padding: '10px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', gap: 6 }}>
-            {Object.entries(MASTERY_STATES).map(([key, m]) => {
-              const active = Mastery.get(user, selectedNode.name) === key;
-              return (
-                <button key={key} onClick={() => setMastery(selectedNode.name, key)} style={{
-                  flex: 1, padding: '6px 8px', borderRadius: 6, cursor: 'pointer',
-                  background: active ? m.color + '25' : T.surface,
-                  border: `1px solid ${active ? m.color + '60' : T.border}`,
-                  color: active ? m.color : T.textSec,
-                  fontSize: 11, fontWeight: active ? 700 : 500,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                }}>
-                  <span>{m.icon}</span>{m.label}
-                </button>
-              );
-            })}
           </div>
           <div style={{ flex: 1, padding: 20, overflowY: 'auto', fontSize: 13, lineHeight: 1.8, color: T.textSec }}>
             {aiLoading && !aiExplain ? (
@@ -382,4 +239,4 @@ const KnowledgePage = ({ user }) => {
   );
 };
 
-Object.assign(window, { HomePage, KnowledgePage, Mastery, MASTERY_STATES });
+Object.assign(window, { HomePage, KnowledgePage });
