@@ -44,6 +44,8 @@ const LoginScreen = ({ onLogin }) => {
 
   const handleKeyDown = e => { if (e.key === 'Enter') tab === 'login' ? handleLogin() : handleRegister(); };
 
+  const isMobile = useIsMobile();
+
   return (
     <div style={{
       position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -67,7 +69,8 @@ const LoginScreen = ({ onLogin }) => {
       {/* Login Card */}
       <div style={{
         width: 420, maxWidth: '90vw', background: 'rgba(12,12,40,0.8)', backdropFilter: 'blur(24px)',
-        borderRadius: 20, border: '1px solid rgba(139,92,246,0.2)', padding: '40px 36px',
+        borderRadius: 20, border: '1px solid rgba(139,92,246,0.2)',
+        padding: isMobile ? '32px 22px' : '40px 36px',
         boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.1)',
         position: 'relative', zIndex: 10,
       }}>

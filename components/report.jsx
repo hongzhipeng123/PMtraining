@@ -1,6 +1,7 @@
 /* ── Growth Report (Weekly / Monthly) + PDF Export ── */
 
 const ReportPage = ({ user, onNavigate }) => {
+  const isMobile = useIsMobile();
   const [period, setPeriod] = React.useState('week'); // week | month
   const toast = useToast();
   const reportRef = React.useRef(null);
@@ -38,14 +39,14 @@ const ReportPage = ({ user, onNavigate }) => {
   };
 
   return (
-    <div className="page-enter" style={{ padding: '28px 32px', height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="page-enter" style={{ padding: isMobile ? '16px' : '28px 32px', height: '100%', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0, justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', marginBottom: 20 }}>
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>成长报告</h2>
+          <h2 style={{ fontSize: isMobile ? 19 : 22, fontWeight: 800, marginBottom: 4 }}>成长报告</h2>
           <p style={{ fontSize: 13, color: T.textSec }}>自动汇总你的学习历程</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <TabBar tabs={[{ key:'week', label:'周报' }, { key:'month', label:'月报' }]} active={period} onChange={setPeriod} style={{ width: 180 }} />
+          <TabBar tabs={[{ key:'week', label:'周报' }, { key:'month', label:'月报' }]} active={period} onChange={setPeriod} style={{ width: isMobile ? 'auto' : 180, flex: isMobile ? 1 : 'none' }} />
           <Button variant="secondary" size="sm" onClick={handleShare}>📤 分享</Button>
           <Button size="sm" onClick={handleExport}>📄 导出 PDF</Button>
         </div>
@@ -56,7 +57,7 @@ const ReportPage = ({ user, onNavigate }) => {
         <div style={{
           background: `linear-gradient(135deg, ${T.p600}40, ${T.cyan}25)`,
           borderRadius: 16, padding: 24, marginBottom: 18,
-          border: `1px solid ${T.p500}30`, display: 'flex', alignItems: 'center', gap: 28,
+          border: `1px solid ${T.p500}30`, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? 16 : 28,
         }}>
           <div style={{ flexShrink: 0 }}>
             <div style={{ fontSize: 11, color: T.p400, fontWeight: 600, marginBottom: 4 }}>
@@ -81,7 +82,7 @@ const ReportPage = ({ user, onNavigate }) => {
         </div>
 
         {/* Metrics grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12, marginBottom: 18 }}>
           {data.metrics.map((m, i) => (
             <Card key={i} style={{ padding: 14, borderTop: `2px solid ${m.color}` }}>
               <div style={{ fontSize: 12, color: T.textSec, marginBottom: 6 }}>{m.label}</div>
@@ -96,7 +97,7 @@ const ReportPage = ({ user, onNavigate }) => {
         </div>
 
         {/* Two columns */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 18 }}>
           {/* Ability growth */}
           <Card>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>📊 能力维度</div>
@@ -234,6 +235,7 @@ function generateReportData(user, period) {
 
 /* ── Daily Question History Calendar ── */
 const DailyHistoryPage = ({ user, onBackToDaily }) => {
+  const isMobile = useIsMobile();
   const [month, setMonth] = React.useState(() => {
     const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() };
   });
@@ -294,8 +296,8 @@ const DailyHistoryPage = ({ user, onBackToDaily }) => {
   const selectedData = selectedDate ? monthData[selectedDate] : null;
 
   return (
-    <div className="page-enter" style={{ padding: '24px 32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div className="page-enter" style={{ padding: isMobile ? '16px' : '24px 32px', height: '100%', display: 'flex', flexDirection: 'column', overflowY: isMobile ? 'auto' : 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0, justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', marginBottom: 16 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>📅 每日一问 · 历史</h2>
           <p style={{ fontSize: 12, color: T.textSec }}>本月已答 <strong style={{ color: T.success }}>{stats.done}</strong> 题 · 平均分 <strong style={{ color: T.warning }}>{stats.avg}</strong> · 连续 <strong style={{ color: T.p400 }}>{stats.streak}</strong> 天</p>
@@ -303,7 +305,7 @@ const DailyHistoryPage = ({ user, onBackToDaily }) => {
         <Button variant="ghost" onClick={onBackToDaily}>← 返回今日一问</Button>
       </div>
 
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, minHeight: 0 }}>
+      <div style={{ flex: isMobile ? 'none' : 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: 16, minHeight: 0 }}>
         <Card style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Month navigator */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, padding: '4px 6px' }}>

@@ -97,22 +97,37 @@ npx serve ai-pm-arena
 
 ```
 ai-pm-arena/
-├── index.html                  # 入口文件
+├── index.html                  # 入口文件（含移动端全局 CSS）
 ├── components/
-│   ├── ui.jsx                 # UI 主题 + 基础组件
+│   ├── ui.jsx                 # UI 主题 + 基础组件 + 响应式钩子（useIsMobile）
 │   ├── api.jsx                # DeepSeek API 封装
+│   ├── memory.jsx             # 分层对话记忆系统
 │   ├── prompts.jsx            # AI Skill Prompts
 │   ├── login.jsx              # 登录/注册页面
-│   ├── knowledge.jsx          # 知识图谱 + 百科
-│   ├── tools.jsx              # AI 工具箱
+│   ├── knowledge.jsx          # 知识图谱（桌面思维导图 / 移动列表） + 百科
+│   ├── tools.jsx              # AI 工具箱 + 名词百科
+│   ├── reverse-ai.jsx         # AI 反向追问模式
 │   ├── growth.jsx             # 仪表盘 + 面试 + 每日一问
+│   ├── report.jsx             # 成长报告 + 每日一问历史日历
+│   ├── search-palette.jsx     # Cmd+K 全局搜索
 │   └── data-interview.jsx     # 面试题库 + 题目定义
-└── app.jsx                     # 主应用框架
+└── app.jsx                     # 主应用框架（桌面侧栏 / 移动抽屉 + 顶栏）
 ```
+
+## 📱 移动端适配
+
+整套平台已适配手机浏览器，**且不影响电脑端体验**（断点 `≤768px`）：
+
+- **汉堡抽屉导航**：顶部栏汉堡键唤起左滑抽屉 + 遮罩，点导航自动收起
+- **底部上滑面板**：设置、知识点/词条详情改为 bottom sheet
+- **知识图谱**：手机端切换为可折叠列表视图（桌面端仍是思维导图，数据互通）
+- **栅格自适应**：多列卡片在手机上降级为单列 / 双列
+- **聊天体验**：面试 chat 输入框吸底、适配键盘安全区
+- **输入框 16px**：避免 iOS 聚焦自动缩放；适配刘海屏安全区
 
 ## 💾 数据持久化
 
-所有数据存储在浏览器本地（localStorage），格式：
+所有数据存储在浏览器本地（localStorage / sessionStorage），格式：
 - `pm_users`：用户注册信息
 - `user_{username}_apikey`：API Key
 - `user_{username}_stats`：使用统计
@@ -121,13 +136,15 @@ ai-pm-arena/
 - `user_{username}_vocab_saved`：收藏词汇
 
 > 🔒 API Key 只在本地存储，永不上传到服务器
+>
+> 📱 **纯本地、不跨设备同步**：手机与电脑、不同浏览器之间数据互不相通；登录态存于 sessionStorage（关标签页即清空，需重新登录）。跨设备迁移请用「设置 → 数据管理 → 导出/导入 JSON」。清理浏览器数据会清空全部记录。
 
 ## 🎨 UI 特色
 
 - **沉浸式登录**：动态背景动效 + 浮动卡片
 - **思维导图交互**：可缩放、可拖拽、支持多级展开
 - **流式输出体验**：AI 生成内容实时显示，带光标动效
-- **响应式布局**：适配各类屏幕
+- **响应式布局**：桌面侧边栏 + 移动端汉堡抽屉，断点 768px 自适应
 
 ## 📖 使用建议
 
@@ -146,6 +163,6 @@ MIT License
 ---
 
 **作者**：PM 修炼场团队  
-**最后更新**：2026 年 6 月  
+**最后更新**：2026 年 6 月（v2.1 移动端适配）  
 **开源协议**：MIT
 

@@ -1,6 +1,7 @@
 /* ── Cmd+K Global Search Palette ── */
 
 const CmdKPalette = ({ open, onClose, onNavigate, user }) => {
+  const isMobile = useIsMobile();
   const [query, setQuery] = React.useState('');
   const [selected, setSelected] = React.useState(0);
   const inputRef = React.useRef(null);
@@ -94,12 +95,14 @@ const CmdKPalette = ({ open, onClose, onNavigate, user }) => {
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 2000,
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)',
-      display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 80,
+      display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+      paddingTop: isMobile ? 'calc(8px + env(safe-area-inset-top))' : 80,
+      paddingLeft: isMobile ? 8 : 0, paddingRight: isMobile ? 8 : 0,
     }} className="anim-fade-in">
       <div onClick={e => e.stopPropagation()} style={{
-        width: 640, maxWidth: '90vw', background: T.bgAlt, borderRadius: 16,
+        width: 640, maxWidth: isMobile ? '100%' : '90vw', background: T.bgAlt, borderRadius: 16,
         border: `1px solid ${T.p500}40`, boxShadow: `0 24px 80px rgba(0,0,0,0.7), 0 0 40px ${T.p500}30`,
-        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '70vh',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: isMobile ? '88vh' : '70vh',
       }} className="anim-fade-in-scale">
         {/* Search input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 18px', borderBottom: `1px solid ${T.border}` }}>
@@ -146,7 +149,7 @@ const CmdKPalette = ({ open, onClose, onNavigate, user }) => {
           )}
         </div>
         {/* Footer */}
-        <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', fontSize: 10, color: T.muted }}>
+        <div style={{ padding: '10px 16px', borderTop: `1px solid ${T.border}`, display: isMobile ? 'none' : 'flex', justifyContent: 'space-between', fontSize: 10, color: T.muted }}>
           <div style={{ display: 'flex', gap: 12 }}>
             <span><kbd style={kbdStyle}>↑</kbd><kbd style={kbdStyle}>↓</kbd> 导航</span>
             <span><kbd style={kbdStyle}>↵</kbd> 选择</span>

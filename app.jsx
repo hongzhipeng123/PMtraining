@@ -16,12 +16,23 @@ const NAV_ITEMS = [
   { key:'report', label:'成长报告', icon:'chart' },
 ];
 
-const Sidebar = ({ active, onNavigate, collapsed, onToggle, user, onLogout, onOpenSettings, onOpenCmdK }) => (
+const Sidebar = ({ active, onNavigate, collapsed, onToggle, user, onLogout, onOpenSettings, onOpenCmdK, isMobile, mobileOpen, onCloseMobile }) => (
   <div style={{
-    width: collapsed ? 64 : 220, height: '100%', background: T.bgAlt,
+    width: isMobile ? 270 : (collapsed ? 64 : 220), height: '100%', background: T.bgAlt,
     borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column',
-    transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)', flexShrink: 0, overflow: 'hidden', position: 'relative',
+    transition: isMobile ? 'transform 0.3s cubic-bezier(0.4,0,0.2,1)' : 'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+    flexShrink: 0, overflow: 'hidden',
+    position: isMobile ? 'fixed' : 'relative',
+    top: 0, left: 0, bottom: 0, zIndex: 90,
+    transform: isMobile ? (mobileOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+    paddingTop: isMobile ? 'env(safe-area-inset-top)' : 0,
+    boxShadow: isMobile && mobileOpen ? '8px 0 40px rgba(0,0,0,0.5)' : 'none',
   }}>
+    {isMobile && (
+      <button onClick={onCloseMobile} style={{ position: 'absolute', top: 'calc(16px + env(safe-area-inset-top))', right: 12, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: T.textSec, zIndex: 5 }}>
+        <Icon name="close" size={16} />
+      </button>
+    )}
     <div style={{ padding: collapsed ? '20px 12px' : '20px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
       <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: `linear-gradient(135deg, ${T.p600}, ${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#fff', boxShadow: T.glowSm }}>PM</div>
       {!collapsed && <div style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}><div style={{ fontSize: 14, fontWeight: 800, color: T.text }}>AI PM 修炼场</div><div style={{ fontSize: 10, color: T.muted }}>v2.0</div></div>}
@@ -56,7 +67,7 @@ const Sidebar = ({ active, onNavigate, collapsed, onToggle, user, onLogout, onOp
         {!collapsed && <button onClick={onLogout} title="退出登录" style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', padding: 4, flexShrink: 0 }}><Icon name="logout" size={16} /></button>}
       </div>
     </div>
-    <button onClick={onToggle} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'absolute', top: 28, right: -12, zIndex: 20, color: T.textSec, boxShadow: T.glowSm }}>
+    <button onClick={onToggle} style={{ display: isMobile ? 'none' : 'flex', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, width: 24, height: 24, alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'absolute', top: 28, right: -12, zIndex: 20, color: T.textSec, boxShadow: T.glowSm }}>
       <Icon name={collapsed ? 'expand' : 'collapse'} size={14} />
     </button>
   </div>
@@ -80,6 +91,27 @@ const NavItem = ({ item, active, collapsed, onClick }) => {
     </div>
   );
 };
+
+/* ── Mobile Top Bar ── */
+const MobileTopBar = ({ onOpenMenu, onOpenCmdK, user }) => (
+  <div style={{
+    height: 56, flexShrink: 0, background: T.bgAlt, borderBottom: `1px solid ${T.border}`,
+    display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px',
+    paddingTop: 'env(safe-area-inset-top)', boxSizing: 'content-box',
+    position: 'sticky', top: 0, zIndex: 50,
+  }}>
+    <button onClick={onOpenMenu} aria-label="菜单" style={{ background: 'none', border: 'none', color: T.text, cursor: 'pointer', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+      <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `linear-gradient(135deg, ${T.p600}, ${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff' }}>PM</div>
+      <span style={{ fontSize: 15, fontWeight: 800, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>AI PM 修炼场</span>
+    </div>
+    <button onClick={onOpenCmdK} aria-label="搜索" style={{ background: 'none', border: 'none', color: T.textSec, cursor: 'pointer', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <Icon name="search" size={20} />
+    </button>
+  </div>
+);
 
 /* ── Settings Modal (v2: + Memory + Data) ── */
 const SettingsModal = ({ open, onClose, user }) => {
@@ -245,11 +277,13 @@ const App = () => {
   const [user, setUser] = React.useState(() => sessionStorage.getItem('currentUser'));
   const [page, setPage] = React.useState('home');
   const [collapsed, setCollapsed] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [cmdKOpen, setCmdKOpen] = React.useState(false);
   const [pageKey, setPageKey] = React.useState(0);
+  const isMobile = useIsMobile();
 
-  const navigate = p => { setPage(p); setPageKey(k => k + 1); };
+  const navigate = p => { setPage(p); setPageKey(k => k + 1); setDrawerOpen(false); };
 
   const handleLogin = username => {
     sessionStorage.setItem('currentUser', username);
@@ -308,12 +342,17 @@ const App = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', background: T.bg, position: 'relative' }}>
-      <Sidebar active={page} onNavigate={navigate} collapsed={collapsed} onToggle={() => setCollapsed(c => !c)}
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: '100vh', width: '100vw', background: T.bg, position: 'relative', overflow: 'hidden' }}>
+      {isMobile && <MobileTopBar onOpenMenu={() => setDrawerOpen(true)} onOpenCmdK={() => setCmdKOpen(true)} user={user} />}
+      {isMobile && drawerOpen && (
+        <div onClick={() => setDrawerOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)', zIndex: 80 }} className="anim-fade-in" />
+      )}
+      <Sidebar active={page} onNavigate={navigate} collapsed={isMobile ? false : collapsed} onToggle={() => setCollapsed(c => !c)}
         user={user} onLogout={handleLogout}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenCmdK={() => setCmdKOpen(true)} />
-      <main key={pageKey} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>{renderPage()}</main>
+        onOpenSettings={() => { setSettingsOpen(true); setDrawerOpen(false); }}
+        onOpenCmdK={() => { setCmdKOpen(true); setDrawerOpen(false); }}
+        isMobile={isMobile} mobileOpen={drawerOpen} onCloseMobile={() => setDrawerOpen(false)} />
+      <main key={pageKey} style={{ flex: 1, overflow: 'hidden', position: 'relative', minWidth: 0, minHeight: 0 }}>{renderPage()}</main>
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} user={user} />
       <CmdKPalette open={cmdKOpen} onClose={() => setCmdKOpen(false)} onNavigate={navigate} user={user} />
     </div>

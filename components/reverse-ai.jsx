@@ -36,6 +36,7 @@ const REVERSE_QUESTIONS = {
 
 const ReverseQuestionFlow = ({ toolKey, initialInput, onComplete, onSkip, user }) => {
   const config = REVERSE_QUESTIONS[toolKey];
+  const isMobile = useIsMobile();
   const [stepIdx, setStepIdx] = React.useState(0);
   const [answers, setAnswers] = React.useState({});
   const [currentInput, setCurrentInput] = React.useState('');
@@ -105,9 +106,9 @@ const ReverseQuestionFlow = ({ toolKey, initialInput, onComplete, onSkip, user }
         <Button variant="ghost" size="sm" onClick={onSkip}>跳过追问</Button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 280px', gap: isMobile ? 14 : 20, flex: 1, minHeight: 0 }}>
         {/* Left: current Q */}
-        <Card style={{ display: 'flex', flexDirection: 'column' }}>
+        <Card style={{ display: 'flex', flexDirection: 'column', order: isMobile ? 2 : 0 }}>
           {/* Initial input recap */}
           <div style={{ background: T.cyan + '10', padding: 10, borderRadius: 8, border: `1px solid ${T.cyan}30`, marginBottom: 14, fontSize: 12 }}>
             <div style={{ fontSize: 11, color: T.cyan, fontWeight: 600, marginBottom: 4 }}>📝 你的需求</div>
@@ -170,7 +171,7 @@ const ReverseQuestionFlow = ({ toolKey, initialInput, onComplete, onSkip, user }
         </Card>
 
         {/* Right: progress */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, order: isMobile ? 1 : 0 }}>
           <Card style={{ padding: 16 }}>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>📋 澄清进度</div>
             {config.questions.map((q, i) => {

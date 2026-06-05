@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>AI PM 修炼场 v2.0</title>
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
@@ -47,6 +47,9 @@ input, textarea, select, button { font-family: inherit; }
 .anim-fade-in { animation: fadeIn 0.3s ease-out both; }
 .anim-slide-right { animation: slideInRight 0.3s ease-out both; }
 
+@keyframes slideUpSheet { from{ opacity:0; transform:translateY(40px); } to{ opacity:1; transform:translateY(0); } }
+.anim-slide-up-sheet { animation: slideUpSheet 0.3s cubic-bezier(0.4,0,0.2,1) both; }
+
 [data-tooltip] { position: relative; }
 [data-tooltip]:hover::after {
   content: attr(data-tooltip); position: absolute; left: 110%; top: 50%; transform: translateY(-50%);
@@ -54,6 +57,24 @@ input, textarea, select, button { font-family: inherit; }
   font-size: 12px; white-space: nowrap; z-index: 1000; border: 1px solid var(--border);
   box-shadow: var(--glow-sm); pointer-events: none;
 }
+
+/* ── Mobile (≤768px) ── */
+@media (max-width: 768px) {
+  /* Allow the app shell to manage its own scroll; release the hard viewport lock */
+  html, body { overflow: visible; height: 100%; }
+  #root { height: 100%; }
+  /* Prevent iOS auto-zoom on focus: inputs must be ≥16px */
+  input, textarea, select { font-size: 16px !important; }
+  /* Disable tooltips (no hover on touch) */
+  [data-tooltip]:hover::after { display: none; }
+  /* Toast: top-center, edge-to-edge */
+  .toast-stack { top: calc(12px + env(safe-area-inset-top)) !important; right: 12px !important; left: 12px !important; align-items: stretch; }
+  /* Momentum scrolling for inner scroll regions */
+  * { -webkit-overflow-scrolling: touch; }
+  /* Slimmer scrollbars feel out of place on mobile; hide track */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+}
+* { -webkit-tap-highlight-color: transparent; }
 </style>
 </head>
 <body>

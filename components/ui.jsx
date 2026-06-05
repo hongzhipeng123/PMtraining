@@ -11,6 +11,21 @@ const T = {
   transition:'0.25s cubic-bezier(0.4,0,0.2,1)',
 };
 
+/* ── Responsive hooks ── */
+const useMediaQuery = (query) => {
+  const [matches, setMatches] = React.useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  React.useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = e => setMatches(e.matches);
+    setMatches(mql.matches);
+    if (mql.addEventListener) mql.addEventListener('change', handler);
+    else mql.addListener(handler);
+    return () => { if (mql.removeEventListener) mql.removeEventListener('change', handler); else mql.removeListener(handler); };
+  }, [query]);
+  return matches;
+};
+const useIsMobile = () => useMediaQuery('(max-width: 768px)');
+
 /* ── SVG Icon paths ── */
 const ICONS = {
   home: 'M3 12l9-8 9 8v9a1 1 0 01-1 1h-5v-5h-4v5H5a1 1 0 01-1-1v-9z',
@@ -50,6 +65,7 @@ const Button = ({ children, variant = 'primary', size = 'md', icon, disabled, on
   const base = {
     display: 'inline-flex', alignItems: 'center', gap: 8, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
     fontWeight: 600, borderRadius: T.radiusSm, transition: T.transition, opacity: disabled ? 0.5 : 1,
+    whiteSpace: 'nowrap', flexShrink: 0,
     fontSize: size === 'sm' ? 13 : size === 'lg' ? 16 : 14,
     padding: size === 'sm' ? '6px 14px' : size === 'lg' ? '12px 28px' : '9px 20px',
     ...style,
@@ -116,23 +132,33 @@ const Card = ({ children, hoverable, onClick, style = {}, className = '' }) => {
 const Badge = ({ children, color = T.p500, style = {} }) => (
   <span style={{
     display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 20,
-    fontSize: 11, fontWeight: 600, background: color + '22', color: color, ...style,
+    fontSize: 11, fontWeight: 600, background: color + '22', color: color, whiteSpace: 'nowrap', ...style,
   }}>{children}</span>
 );
 
 /* ── Modal ── */
 const Modal = ({ open, onClose, title, children, width = 440 }) => {
+  const isMobile = useIsMobile();
   if (!open) return null;
+  const mobileShell = {
+    background: T.bgAlt, borderTopLeftRadius: T.radiusLg, borderTopRightRadius: T.radiusLg,
+    borderTop: `1px solid ${T.border}`, width: '100%', maxWidth: '100%', maxHeight: '92vh',
+    overflow: 'auto', padding: '24px 18px calc(24px + env(safe-area-inset-bottom))',
+    boxShadow: '0 -12px 48px rgba(0,0,0,0.5)',
+  };
+  const desktopShell = {
+    background: T.bgAlt, borderRadius: T.radiusLg, border: `1px solid ${T.border}`,
+    width, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: 28,
+    boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+  };
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'fixed', inset: 0, zIndex: 1000, display: 'flex',
+      alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center',
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
     }} className="anim-fade-in" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        background: T.bgAlt, borderRadius: T.radiusLg, border: `1px solid ${T.border}`,
-        width, maxWidth: '90vw', maxHeight: '80vh', overflow: 'auto', padding: 28,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-      }} className="anim-fade-in-scale">
+      <div onClick={e => e.stopPropagation()} style={isMobile ? mobileShell : desktopShell}
+        className={isMobile ? 'anim-slide-up-sheet' : 'anim-fade-in-scale'}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: T.text }}>{title}</h3>
           <button onClick={onClose} style={{
@@ -182,7 +208,7 @@ const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={addToast}>
       {children}
-      <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="toast-stack" style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {toasts.map(t => (
           <div key={t.id} style={{
             background: T.card, border: `1px solid ${colors[t.type]}`, borderRadius: T.radiusSm,
@@ -236,4 +262,5 @@ const AnimatedNumber = ({ value, duration = 1200 }) => {
 Object.assign(window, {
   T, ICONS, Icon, Button, Input, Card, Badge, Modal, TabBar, Spinner,
   ToastContext, ToastProvider, useToast, useTypewriter, AnimatedNumber,
+  useMediaQuery, useIsMobile,
 });

@@ -16,6 +16,7 @@ const InterviewPage = ({ user, onNavToReport }) => {
   const [diffFilter, setDiffFilter] = React.useState('all');
   const [currentSession, setCurrentSession] = React.useState(null);
   const [currentQ, setCurrentQ] = React.useState(null);
+  const isMobile = useIsMobile();
   const toast = useToast();
 
   const completedIds = React.useMemo(() => {
@@ -55,7 +56,7 @@ const InterviewPage = ({ user, onNavToReport }) => {
   /* Library view */
   if (view === 'library') {
     return (
-      <div className="page-enter" style={{ padding: '24px 32px', height: '100%', overflowY: 'auto' }}>
+      <div className="page-enter" style={{ padding: isMobile ? '16px' : '24px 32px', height: '100%', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 800 }}>模拟面试 · 题库</h2>
@@ -65,7 +66,7 @@ const InterviewPage = ({ user, onNavToReport }) => {
         </div>
 
         {/* Difficulty progress */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 12, marginBottom: 18 }}>
           {[
             { lvl: 'easy', desc: '基础题，建立产品思维', done: doneEasy, total: easyCount, unlocked: true },
             { lvl: 'mid', desc: '进阶题，掌握核心方法论', done: doneMid, total: midCount, unlocked: midUnlocked, hint: '完成 2 道入门题解锁' },
@@ -119,7 +120,7 @@ const InterviewPage = ({ user, onNavToReport }) => {
         </div>
 
         {/* Questions grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 10, marginBottom: 24 }}>
           {filteredQuestions.map(q => {
             const diff = getDiff(q);
             const meta = DIFF_META[diff];
@@ -188,11 +189,12 @@ const InterviewPage = ({ user, onNavToReport }) => {
 
 /* ─── Interview Session (the actual chat with memory) ─── */
 const InterviewSession = ({ user, session: initSession, question, onComplete, onExit }) => {
+  const isMobile = useIsMobile();
   const [session, setSession] = React.useState(initSession);
   const [input, setInput] = React.useState('');
   const [aiTyping, setAiTyping] = React.useState(false);
   const [lastBreakdown, setLastBreakdown] = React.useState(null);
-  const [showMemPanel, setShowMemPanel] = React.useState(true);
+  const [showMemPanel, setShowMemPanel] = React.useState(!initSession || window.innerWidth > 768 ? true : false);
   const [strategy, setStrategyS] = React.useState(() => MemoryManager.getStrategy(user));
   const msgEnd = React.useRef(null);
   const toast = useToast();
@@ -298,15 +300,15 @@ const InterviewSession = ({ user, session: initSession, question, onComplete, on
     <div style={{ display: 'flex', height: '100%' }}>
       {/* Main chat */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ padding: '12px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ padding: isMobile ? '10px 14px' : '12px 24px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 6 : 10, minWidth: 0, flexWrap: 'wrap' }}>
             <Badge color="#f43f5e">{cat}</Badge>
             <Badge color={T.warning}>{question.difficulty}</Badge>
             <span style={{ fontSize: 13, color: T.textSec }}>第 {(session.rounds || []).filter(r => r.role === 'user').length} 轮</span>
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
             <Button variant="ghost" size="sm" onClick={() => setShowMemPanel(s => !s)}>
-              {showMemPanel ? '隐藏' : '显示'}记忆面板
+              {isMobile ? '🧠' : (showMemPanel ? '隐藏' : '显示') + '记忆面板'}
             </Button>
             <Button variant="ghost" size="sm" onClick={onExit}>退出</Button>
           </div>
@@ -328,11 +330,11 @@ const InterviewSession = ({ user, session: initSession, question, onComplete, on
           </div>
         )}
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? 16 : 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {(session.rounds || []).map((r, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: r.role === 'user' ? 'flex-end' : 'flex-start' }}>
               <div style={{
-                maxWidth: '78%', padding: '12px 16px', borderRadius: 14,
+                maxWidth: isMobile ? '88%' : '78%', padding: '12px 16px', borderRadius: 14,
                 background: r.role === 'user' ? T.p700 + 'cc' : T.surface,
                 border: `1px solid ${r.role === 'user' ? T.p600 + '60' : T.border}`,
                 fontSize: 13, lineHeight: 1.75,
@@ -351,19 +353,29 @@ const InterviewSession = ({ user, session: initSession, question, onComplete, on
           <div ref={msgEnd} />
         </div>
 
-        <div style={{ padding: '14px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10 }}>
+        <div style={{ padding: isMobile ? '12px 14px calc(12px + env(safe-area-inset-bottom))' : '14px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10 }}>
           <input value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="输入你的回答..."
             disabled={aiTyping}
-            style={{ flex: 1, padding: '10px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 14, outline: 'none' }} />
-          <Button onClick={handleSend} disabled={aiTyping || !input.trim()} icon="send">发送</Button>
+            style={{ flex: 1, minWidth: 0, padding: '10px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 14, outline: 'none' }} />
+          <Button onClick={handleSend} disabled={aiTyping || !input.trim()} icon="send">{isMobile ? '' : '发送'}</Button>
         </div>
       </div>
 
       {/* Right: Memory panel */}
       {showMemPanel && (
-        <div style={{ width: 280, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, padding: 16, overflowY: 'auto' }}>
+        <div style={isMobile ? {
+          position: 'fixed', inset: 0, zIndex: 130, background: T.bgAlt,
+          padding: 16, paddingTop: 'calc(16px + env(safe-area-inset-top))', overflowY: 'auto',
+        } : { width: 280, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, padding: 16, overflowY: 'auto' }}
+          className={isMobile ? 'anim-fade-in' : ''}>
+          {isMobile && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>🧠 记忆面板</div>
+              <button onClick={() => setShowMemPanel(false)} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textSec, cursor: 'pointer' }}><Icon name="close" size={18} /></button>
+            </div>
+          )}
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>🎚 记忆策略</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
             {Object.entries(MEMORY_STRATEGIES).map(([key, s]) => (
@@ -420,6 +432,7 @@ const Row = ({ k, v, color, bold }) => (
 
 /* ─── Interview History List ─── */
 const InterviewHistory = ({ user, onBack, onPickSession }) => {
+  const isMobile = useIsMobile();
   const [sessions, setSessions] = React.useState(() => MemoryManager.getSessionsIndex(user));
   const handleDelete = (id, e) => {
     e.stopPropagation();
@@ -428,7 +441,7 @@ const InterviewHistory = ({ user, onBack, onPickSession }) => {
     setSessions(MemoryManager.getSessionsIndex(user));
   };
   return (
-    <div className="page-enter" style={{ padding: '24px 32px', height: '100%', overflowY: 'auto' }}>
+    <div className="page-enter" style={{ padding: isMobile ? '16px' : '24px 32px', height: '100%', overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 800 }}>面试会话历史</h2>
@@ -441,7 +454,7 @@ const InterviewHistory = ({ user, onBack, onPickSession }) => {
           📚 暂无历史会话，去题库开始一场面试吧
         </Card>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(320px,1fr))', gap: 12 }}>
           {sessions.map(s => (
             <Card key={s.id} hoverable onClick={() => onPickSession(s)} style={{ padding: 14 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -471,6 +484,7 @@ const DailyPage = ({ user, onShowHistory }) => {
   const [aiReview, setAiReview] = React.useState('');
   const [aiLoading, setAiLoading] = React.useState(false);
   const [showHint, setShowHint] = React.useState(false);
+  const isMobile = useIsMobile();
   const toast = useToast();
 
   React.useEffect(() => {
@@ -505,8 +519,8 @@ const DailyPage = ({ user, onShowHistory }) => {
   };
 
   return (
-    <div className="page-enter" style={{ padding: '32px 36px', maxWidth: 800, height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+    <div className="page-enter" style={{ padding: isMobile ? '16px' : '32px 36px', maxWidth: 800, height: '100%', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24, gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 44, height: 44, borderRadius: 12, background: T.warning + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="daily" size={22} color={T.warning} />
@@ -580,6 +594,7 @@ const ACHIEVEMENTS = [
 ];
 
 const DashboardPage = ({ user, onNavigate }) => {
+  const isMobile = useIsMobile();
   const [, forceUpdate] = React.useState(0);
   React.useEffect(() => { const iv = setInterval(() => forceUpdate(n => n + 1), 3000); return () => clearInterval(iv); }, []);
 
@@ -599,9 +614,9 @@ const DashboardPage = ({ user, onNavigate }) => {
   ];
 
   return (
-    <div className="page-enter" style={{ padding: '28px 32px', height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800 }}>成长仪表盘</h2>
+    <div className="page-enter" style={{ padding: isMobile ? '16px' : '28px 32px', height: '100%', overflowY: 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? 16 : 24, gap: 10 }}>
+        <h2 style={{ fontSize: isMobile ? 19 : 22, fontWeight: 800 }}>成长仪表盘</h2>
         <Button variant="secondary" onClick={() => onNavigate && onNavigate('report')}>📄 查看成长报告</Button>
       </div>
 
@@ -621,7 +636,7 @@ const DashboardPage = ({ user, onNavigate }) => {
         </Card>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 14, marginBottom: 28 }}>
         {[
           { label: '知识学习', val: stats.knowledge || 0, icon: 'knowledge', color: T.p500 },
           { label: '工具调用', val: stats.tools || 0, icon: 'tools', color: T.cyan },
@@ -638,7 +653,7 @@ const DashboardPage = ({ user, onNavigate }) => {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginBottom: 28 }}>
         <Card style={{ padding: 24 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>能力雷达图</h3>
           <RadarChart data={radarData} size={260} />
@@ -663,7 +678,7 @@ const DashboardPage = ({ user, onNavigate }) => {
       {(profile?.preferences?.length || profile?.strengths?.length || profile?.weaknesses?.length) ? (
         <Card style={{ marginBottom: 28, background: `linear-gradient(135deg, ${T.p600}15, ${T.cyan}10)`, border: `1px solid ${T.p500}30` }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>🧬 你的 PM 画像 <span style={{ fontSize: 11, color: T.muted, fontWeight: 400 }}>· 基于 {profile.conversation_count || 0} 次对话提炼</span></h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 12 }}>
             <div>
               <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>📌 关注领域</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

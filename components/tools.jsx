@@ -8,6 +8,7 @@ const TOOL_CONFIGS = {
 
 const ToolPage = ({ toolKey, user }) => {
   const config = TOOL_CONFIGS[toolKey];
+  const isMobile = useIsMobile();
   const [phase, setPhase] = React.useState('input'); // input | reverseQ | output
   const [input, setInput] = React.useState('');
   const [output, setOutput] = React.useState('');
@@ -75,7 +76,7 @@ const ToolPage = ({ toolKey, user }) => {
   /* Reverse questioning phase */
   if (phase === 'reverseQ') {
     return (
-      <div className="page-enter" style={{ padding: '24px 32px', height: '100%', overflow: 'auto' }}>
+      <div className="page-enter" style={{ padding: isMobile ? '16px' : '24px 32px', height: '100%', overflow: 'auto' }}>
         <div style={{ marginBottom: 16 }}>
           <h2 style={{ fontSize: 20, fontWeight: 800 }}>{config.title}</h2>
         </div>
@@ -90,7 +91,7 @@ const ToolPage = ({ toolKey, user }) => {
   }
 
   return (
-    <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '28px 32px' }}>
+    <div className="page-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: isMobile ? '16px' : '28px 32px' }}>
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: config.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -105,8 +106,8 @@ const ToolPage = ({ toolKey, user }) => {
           <textarea value={input} onChange={e => setInput(e.target.value)} placeholder={config.placeholder}
             style={{ width: '100%', minHeight: 100, padding: 14, background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.text, fontSize: 14, resize: 'vertical', outline: 'none', transition: T.transition, lineHeight: 1.7 }}
             onFocus={e => e.target.style.borderColor = T.p500} onBlur={e => e.target.style.borderColor = T.border} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 12, color: T.muted }}>{input.length} 字</span>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: T.textSec, cursor: 'pointer', userSelect: 'none' }}>
                 <input type="checkbox" checked={useReverse} onChange={e => setUseReverse(e.target.checked)} style={{ accentColor: T.p500 }} />
@@ -248,6 +249,7 @@ const DICT_TERMS = [
 ];
 
 const DictionaryPage = ({ user }) => {
+  const isMobile = useIsMobile();
   const [search, setSearch] = React.useState('');
   const [category, setCategory] = React.useState('全部');
   const [tab, setTab] = React.useState('all');
@@ -301,11 +303,11 @@ const DictionaryPage = ({ user }) => {
   return (
     <div className="page-enter" style={{ display: 'flex', height: '100%' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ padding: '24px 28px 0', flexShrink: 0 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>产品名词百科</h2>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <div style={{ padding: isMobile ? '16px 16px 0' : '24px 28px 0', flexShrink: 0 }}>
+          <h2 style={{ fontSize: isMobile ? 19 : 20, fontWeight: 800, marginBottom: 16 }}>产品名词百科</h2>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 16 }}>
             <div style={{ flex: 1 }}><Input value={search} onChange={setSearch} placeholder="搜索术语..." icon="search" style={{ marginBottom: 0 }} /></div>
-            <TabBar tabs={[{ key: 'all', label: `全部 (${DICT_TERMS.length})` }, { key: 'saved', label: `⭐ 生词本 (${saved.length})` }]} active={tab} onChange={setTab} style={{ width: 240 }} />
+            <TabBar tabs={[{ key: 'all', label: `全部 (${DICT_TERMS.length})` }, { key: 'saved', label: `⭐ 生词本 (${saved.length})` }]} active={tab} onChange={setTab} style={{ width: isMobile ? '100%' : 240 }} />
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
             {DICT_CATEGORIES.map(cat => (
@@ -313,11 +315,11 @@ const DictionaryPage = ({ user }) => {
             ))}
           </div>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px 28px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '0 16px 16px' : '0 28px 28px' }}>
           {filtered.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, color: T.muted }}>{tab === 'saved' ? '生词本为空，点击词条旁的 ☆ 收藏' : '没有匹配的术语'}</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
               {filtered.map((t, i) => (
                 <Card key={t.term} hoverable onClick={() => handleSelect(t)} style={{ padding: 16, animation: `fadeIn 0.2s ease-out ${Math.min(i * 0.03, 0.3)}s both`, borderColor: selected?.term === t.term ? T.p500 + '60' : undefined }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
@@ -333,10 +335,16 @@ const DictionaryPage = ({ user }) => {
         </div>
       </div>
       {selected && (
-        <div style={{ width: 360, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out both', flexShrink: 0 }}>
+        <div style={isMobile ? {
+          position: 'fixed', left: 0, right: 0, bottom: 0, top: '12%', zIndex: 120,
+          borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.border}`,
+          background: T.bgAlt, display: 'flex', flexDirection: 'column',
+          boxShadow: '0 -12px 48px rgba(0,0,0,0.55)', paddingBottom: 'env(safe-area-inset-bottom)',
+        } : { width: 360, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out both', flexShrink: 0 }}
+          className={isMobile ? 'anim-slide-up-sheet' : ''}>
           <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div><div style={{ fontWeight: 700, fontSize: 16 }}>{selected.term}</div><div style={{ fontSize: 12, color: T.muted }}>{selected.full}</div></div>
-            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer' }}><Icon name="close" size={18} /></button>
+            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer' }}><Icon name="close" size={isMobile ? 22 : 18} /></button>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 20, fontSize: 13, lineHeight: 1.8 }}>
             {aiLoading && !aiExplain ? (

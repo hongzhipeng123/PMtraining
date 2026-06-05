@@ -49,15 +49,16 @@ const HomePage = ({ user, stats, onNavigate }) => {
   const st = stats || { knowledge: 0, tools: 0, dictionary: 0, interview: 0 };
   const todayIdx = Math.floor(Date.now() / 86400000) % DAILY_QUESTIONS.length;
   const todayQ = DAILY_QUESTIONS[todayIdx];
+  const isMobile = useIsMobile();
   return (
-    <div className="page-enter" style={{ padding: '32px 36px', maxWidth: 1100, overflowY: 'auto', height: '100%' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
+    <div className="page-enter" style={{ padding: isMobile ? '20px 16px' : '32px 36px', maxWidth: 1100, overflowY: 'auto', height: '100%' }}>
+      <div style={{ marginBottom: isMobile ? 24 : 32 }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, marginBottom: 6 }}>
           欢迎回来，<span style={{ color: T.p400 }}>{user}</span>
         </h1>
         <p style={{ color: T.textSec, fontSize: 14 }}>继续你的 PM 修炼之旅</p>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: isMobile ? 12 : 16, marginBottom: isMobile ? 24 : 32 }}>
         {[
           { label: '知识学习', val: st.knowledge, color: T.p500 },
           { label: '工具调用', val: st.tools, color: T.cyan },
@@ -71,7 +72,7 @@ const HomePage = ({ user, stats, onNavigate }) => {
         ))}
       </div>
       <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14, color: T.text }}>快速开始</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 14, marginBottom: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 14, marginBottom: isMobile ? 24 : 32 }}>
         {quickLinks.map((q, i) => (
           <Card key={i} hoverable onClick={() => onNavigate(q.page)}
             style={{ display: 'flex', alignItems: 'center', gap: 16, padding: 18, animation: `slideInUp 0.3s ease-out ${i * 0.05}s both` }}>
@@ -192,6 +193,50 @@ const MindLeaf = ({ x, y, color, label, delay, mastery, onClick }) => {
   );
 };
 
+/* ── Mobile List View (replaces the mind map on small screens) ── */
+const KnowledgeListView = ({ user, onSelectNode, masteryVersion }) => {
+  const [open, setOpen] = React.useState(() => (KNOWLEDGE_TREE[0] ? { [KNOWLEDGE_TREE[0].id]: true } : {}));
+  return (
+    <div style={{ padding: 16, overflowY: 'auto', height: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {KNOWLEDGE_TREE.map(domain => {
+          const isOpen = !!open[domain.id];
+          let m = 0, l = 0;
+          domain.children.forEach(c => { const s = Mastery.get(user, c.name); if (s === 'mastered') m++; else if (s === 'learning') l++; });
+          return (
+            <div key={domain.id} style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, borderLeft: `3px solid ${domain.color}`, overflow: 'hidden' }}>
+              <div onClick={() => setOpen(p => ({ ...p, [domain.id]: !p[domain.id] }))}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', cursor: 'pointer' }}>
+                <span style={{ fontSize: 18 }}>{domain.icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: domain.color }}>{domain.label}</div>
+                  <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{m} 已掌握 · {l} 学习中 · 共 {domain.children.length}</div>
+                </div>
+                <span style={{ fontSize: 14, color: T.muted, transform: isOpen ? 'rotate(90deg)' : 'none', transition: T.transition }}>›</span>
+              </div>
+              {isOpen && (
+                <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {domain.children.map(child => {
+                    const ms = MASTERY_STATES[Mastery.get(user, child.name)] || MASTERY_STATES.todo;
+                    return (
+                      <div key={child.name} onClick={() => onSelectNode(child.name, domain.label)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 8, background: T.surface, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
+                        <span style={{ fontSize: 13, color: ms.color, fontWeight: 700, lineHeight: 1, flexShrink: 0 }}>{ms.icon}</span>
+                        <span style={{ fontSize: 13, color: T.text, flex: 1 }}>{child.name}</span>
+                        <span style={{ fontSize: 11, color: T.muted, flexShrink: 0 }}>{ms.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 /* ── Knowledge Page ── */
 const KnowledgePage = ({ user }) => {
   const [selectedNode, setSelectedNode] = React.useState(null);
@@ -199,6 +244,7 @@ const KnowledgePage = ({ user }) => {
   const [aiLoading, setAiLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('graph');
   const [masteryVer, setMasteryVer] = React.useState(0);
+  const isMobile = useIsMobile();
   const toast = useToast();
 
   const counts = React.useMemo(() => Mastery.counts(user), [user, masteryVer]);
@@ -264,11 +310,11 @@ const KnowledgePage = ({ user }) => {
 
   return (
     <div className="page-enter" style={{ display: 'flex', height: '100%' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px 28px 0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
-            <TabBar tabs={[{ key: 'graph', label: '知识图谱' }, { key: 'topics', label: 'AI 专题' }, { key: 'cases', label: '经典案例' }, { key: 'mastery', label: '掌握进度' }]} active={activeTab} onChange={setActiveTab} style={{ width: 400 }} />
-            <div style={{ display: 'flex', gap: 14, fontSize: 11, color: T.textSec }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ padding: isMobile ? '14px 16px 0' : '20px 28px 0', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0, justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-end', marginBottom: 14 }}>
+            <TabBar tabs={[{ key: 'graph', label: isMobile ? '知识点' : '知识图谱' }, { key: 'topics', label: 'AI 专题' }, { key: 'cases', label: '经典案例' }, { key: 'mastery', label: '掌握进度' }]} active={activeTab} onChange={setActiveTab} style={{ width: isMobile ? '100%' : 400 }} />
+            <div style={{ display: 'flex', gap: 14, fontSize: 11, color: T.textSec, justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
               <span><span style={{ color: T.success, fontWeight: 700 }}>✓ {counts.mastered}</span> 已掌握</span>
               <span><span style={{ color: T.warning, fontWeight: 700 }}>◐ {counts.learning}</span> 学习中</span>
               <span><span style={{ color: T.muted, fontWeight: 700 }}>○ {counts.todo}</span> 待学习</span>
@@ -276,9 +322,11 @@ const KnowledgePage = ({ user }) => {
           </div>
         </div>
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {activeTab === 'graph' && <MindMap onSelectNode={handleSelectNode} user={user} masteryVersion={masteryVer} />}
+          {activeTab === 'graph' && (isMobile
+            ? <KnowledgeListView user={user} onSelectNode={handleSelectNode} masteryVersion={masteryVer} />
+            : <MindMap onSelectNode={handleSelectNode} user={user} masteryVersion={masteryVer} />)}
           {activeTab === 'topics' && (
-            <div style={{ padding: 28, display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16, overflowY: 'auto', height: '100%' }}>
+            <div style={{ padding: isMobile ? 16 : 28, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: isMobile ? 12 : 16, overflowY: 'auto', height: '100%' }}>
               {AI_TOPICS.map((t, i) => (
                 <Card key={i} hoverable onClick={() => handleSelectNode(t.title, 'AI专题')} style={{ borderLeft: `3px solid ${t.color}`, animation: `slideInUp 0.3s ease-out ${i * 0.05}s both` }}>
                   <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{t.title}</div>
@@ -288,7 +336,7 @@ const KnowledgePage = ({ user }) => {
             </div>
           )}
           {activeTab === 'mastery' && (
-            <div style={{ padding: 28, overflowY: 'auto', height: '100%' }}>
+            <div style={{ padding: isMobile ? 16 : 28, overflowY: 'auto', height: '100%' }}>
               <Card style={{ marginBottom: 18, background: `linear-gradient(135deg, ${T.p600}15, ${T.cyan}10)`, border: `1px solid ${T.p500}30` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -302,7 +350,7 @@ const KnowledgePage = ({ user }) => {
                   <div style={{ width: `${counts.learning / 48 * 100}%`, background: T.warning }} />
                 </div>
               </Card>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2,1fr)', gap: 12 }}>
                 {KNOWLEDGE_TREE.map(domain => {
                   const c = byDomain[domain.id] || { mastered: 0, learning: 0, total: 6 };
                   return (
@@ -343,13 +391,19 @@ const KnowledgePage = ({ user }) => {
         </div>
       </div>
       {selectedNode && (
-        <div style={{ width: 380, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out both', flexShrink: 0 }}>
+        <div style={isMobile ? {
+          position: 'fixed', left: 0, right: 0, bottom: 0, top: '12%', zIndex: 120,
+          borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.border}`,
+          background: T.bgAlt, display: 'flex', flexDirection: 'column',
+          boxShadow: '0 -12px 48px rgba(0,0,0,0.55)', paddingBottom: 'env(safe-area-inset-bottom)',
+        } : { width: 380, borderLeft: `1px solid ${T.border}`, background: T.bgAlt, display: 'flex', flexDirection: 'column', animation: 'slideInRight 0.3s ease-out both', flexShrink: 0 }}
+          className={isMobile ? 'anim-slide-up-sheet' : ''}>
           <div style={{ padding: '20px 20px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>{selectedNode.category}</div>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{selectedNode.name}</div>
             </div>
-            <button onClick={() => setSelectedNode(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer' }}><Icon name="close" size={18} /></button>
+            <button onClick={() => setSelectedNode(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer' }}><Icon name="close" size={isMobile ? 22 : 18} /></button>
           </div>
           {/* Mastery selector */}
           <div style={{ padding: '10px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', gap: 6 }}>
